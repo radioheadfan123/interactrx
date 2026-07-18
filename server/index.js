@@ -38,6 +38,42 @@ const PSEUDO_BY_ID = Object.fromEntries(PSEUDO.map((p) => [p.rxcui, p]));
 
 const TERM_OK = new Set(["IN", "PIN", "MIN", "BN"]); // ingredient, precise ingredient, multi-ingredient, brand
 
+async function relatedNames(rxcui, param) {
+  try {
+    const data = await cachedFetch(`${RXNORM}/rxcui/${rxcui}/related.json?${param}`);
+    const groups = data?.relatedGroup?.conceptGroup || [];
+    return groups.flatMap((g) => g.conceptProperties || []);
+  } catch { return []; }
+}
+
+// Build a human-friendly display name and find related combo products.
+// BN (brand)   -> "ingredient / ingredient (Brand)"
+// IN (generic) -> "generic (Brand1, Brand2)" when brands exist, plus up to 2
+//                 multi-ingredient combos that contain it, each as its own result
+async function enrichCandidate(rxcui, name, tty) {
+  const out = [];
+  if (tty === "BN") {
+    const ins = await relatedNames(rxcui, "tty=IN+MIN");
+    const generic = ins.find((c) => c.tty === "MIN")?.name || ins.find((c) => c.tty === "IN")?.name;
+    out.push({ rxcui, name: generic ? `${generic} (${name})` : name });
+  } else if (tty === "IN" || tty === "PIN") {
+    const brands = (await relatedNames(rxcui, "tty=BN")).slice(0, 2).map((b) => b.name);
+    out.push({ rxcui, name: brands.length ? `${name} (${brands.join(", ")})` : name });
+    // combos containing this ingredient, e.g. hydrocodone -> acetaminophen / hydrocodone
+    const combos = (await relatedNames(rxcui, "rela=part_of")).filter((c) => c.tty === "MIN").slice(0, 2);
+    for (const c of combos) {
+      const comboBrands = (await relatedNames(c.rxcui, "tty=BN")).slice(0, 2).map((b) => b.name);
+      out.push({ rxcui: c.rxcui, name: comboBrands.length ? `${c.name} (${comboBrands.join(", ")})` : c.name });
+    }
+  } else if (tty === "MIN") {
+    const brands = (await relatedNames(rxcui, "tty=BN")).slice(0, 2).map((b) => b.name);
+    out.push({ rxcui, name: brands.length ? `${name} (${brands.join(", ")})` : name });
+  } else {
+    out.push({ rxcui, name });
+  }
+  return out;
+}
+
 // GET /api/search?q=lipitor
 app.get("/api/search", async (req, res) => {
   const q = String(req.query.q || "").trim().slice(0, 80);
@@ -46,23 +82,25 @@ app.get("/api/search", async (req, res) => {
   try {
     const data = await cachedFetch(`${RXNORM}/approximateTerm.json?term=${encodeURIComponent(q)}&maxEntries=15`);
     const candidates = data?.approximateGroup?.candidate || [];
-    const seen = new Set();
+    const seenCandidates = new Set();
     const results = [...pseudo];
+    const inResults = (id) => results.some((x) => x.rxcui === id);
     for (const c of candidates) {
-      if (seen.has(c.rxcui) || results.length >= 7) continue;
-      seen.add(c.rxcui);
-      // filter to clean term types so dose-form entries don't clutter the dropdown
+      if (seenCandidates.has(c.rxcui) || results.length >= 8) continue;
+      seenCandidates.add(c.rxcui);
       try {
         const props = await cachedFetch(`${RXNORM}/rxcui/${c.rxcui}/properties.json`);
         const p = props?.properties;
-        if (p && TERM_OK.has(p.tty)) results.push({ rxcui: c.rxcui, name: p.name });
+        if (!p || !TERM_OK.has(p.tty)) continue;
+        for (const r of await enrichCandidate(c.rxcui, p.name, p.tty)) {
+          if (!inResults(r.rxcui) && results.length < 8) results.push(r);
+        }
       } catch { /* skip candidate on lookup failure */ }
     }
     // fallback: if the tty filter ate everything, return raw top candidates
     if (results.length === pseudo.length && candidates.length) {
       for (const c of candidates.slice(0, 5)) {
-        if (!seen.has(c.rxcui + "raw")) results.push({ rxcui: c.rxcui, name: c.name || q });
-        seen.add(c.rxcui + "raw");
+        if (!inResults(c.rxcui)) results.push({ rxcui: c.rxcui, name: c.name || q });
       }
     }
     res.json({ results });

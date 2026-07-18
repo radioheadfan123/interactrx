@@ -3,18 +3,31 @@ const request = require("supertest");
 // Mock global fetch so tests don't hit RxNorm/openFDA
 global.fetch = jest.fn((url) => {
   const ok = (json) => Promise.resolve({ ok: true, json: () => Promise.resolve(json) });
-  if (url.includes("approximateTerm")) {
+  const u = String(url);
+  if (u.includes("approximateTerm")) {
+    if (u.includes("norco")) return ok({ approximateGroup: { candidate: [{ rxcui: "218870", name: "Norco", score: "100" }] } });
+    if (u.includes("hydrocodone")) return ok({ approximateGroup: { candidate: [{ rxcui: "5489", name: "hydrocodone", score: "100" }] } });
     return ok({ approximateGroup: { candidate: [{ rxcui: "5640", name: "ibuprofen", score: "100" }] } });
   }
-  if (url.includes("/rxcui/5640/properties")) {
-    return ok({ properties: { rxcui: "5640", name: "ibuprofen", tty: "IN" } });
+  if (u.includes("/rxcui/5640/properties")) return ok({ properties: { rxcui: "5640", name: "ibuprofen", tty: "IN" } });
+  if (u.includes("/rxcui/218870/properties")) return ok({ properties: { rxcui: "218870", name: "Norco", tty: "BN" } });
+  if (u.includes("/rxcui/5489/properties")) return ok({ properties: { rxcui: "5489", name: "hydrocodone", tty: "IN" } });
+  if (u.includes("/rxcui/218870/related") && u.includes("tty=IN")) {
+    return ok({ relatedGroup: { conceptGroup: [{ tty: "MIN", conceptProperties: [{ rxcui: "214182", name: "acetaminophen / hydrocodone", tty: "MIN" }] }] } });
   }
-  if (url.includes("/related.json")) {
+  if (u.includes("/rxcui/5489/related") && u.includes("rela=part_of")) {
+    return ok({ relatedGroup: { conceptGroup: [{ tty: "MIN", conceptProperties: [{ rxcui: "214182", name: "acetaminophen / hydrocodone", tty: "MIN" }] }] } });
+  }
+  if (u.includes("/rxcui/214182/related") && u.includes("tty=BN")) {
+    return ok({ relatedGroup: { conceptGroup: [{ tty: "BN", conceptProperties: [{ rxcui: "218870", name: "Norco", tty: "BN" }] }] } });
+  }
+  if (u.includes("/related.json")) {
     const map = { "5640": "ibuprofen", "11289": "warfarin" };
-    const id = url.match(/rxcui\/(\d+)\//)[1];
+    const id = u.match(/rxcui\/([\w:]+)\//)?.[1];
+    if (u.includes("tty=BN") || u.includes("rela=part_of")) return ok({ relatedGroup: { conceptGroup: [] } });
     return ok({ relatedGroup: { conceptGroup: [{ tty: "IN", conceptProperties: [{ name: map[id] || "unknown" }] }] } });
   }
-  if (url.includes("api.fda.gov")) {
+  if (u.includes("api.fda.gov")) {
     return ok({ results: [{ adverse_reactions: ["Common reactions included nausea, headache, dizziness, and rash."], openfda: { brand_name: ["Advil"] } }] });
   }
   return ok({});
@@ -35,6 +48,16 @@ describe("API", () => {
   test("search injects grapefruit pseudo-entry", async () => {
     const r = await request(app).get("/api/search?q=grapefruit");
     expect(r.body.results.some((x) => x.rxcui === "custom:grapefruit")).toBe(true);
+  });
+  test("brand search displays as generic (Brand)", async () => {
+    const r = await request(app).get("/api/search?q=norco");
+    expect(r.body.results[0].name).toBe("acetaminophen / hydrocodone (Norco)");
+  });
+  test("ingredient search surfaces combo products", async () => {
+    const r = await request(app).get("/api/search?q=hydrocodone");
+    const names = r.body.results.map((x) => x.name);
+    expect(names).toContain("hydrocodone");
+    expect(names).toContain("acetaminophen / hydrocodone (Norco)");
   });
   test("interactions rejects malformed payloads", async () => {
     for (const bad of [{}, { drugs: "x" }, { drugs: [{ rxcui: "<script>", name: "x" }] }, { drugs: [] }]) {

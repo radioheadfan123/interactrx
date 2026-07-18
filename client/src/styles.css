@@ -1,0 +1,197 @@
+:root {
+  --paper: #f7f9fa;
+  --card: #ffffff;
+  --ink: #10232e;
+  --ink-soft: #4a5d68;
+  --line: #dce4e8;
+  --accent: #0e6e6a;        /* pharmacy teal */
+  --accent-soft: #e2f1f0;
+  --contra: #b3261e;
+  --contra-bg: #fdeceb;
+  --major: #b45309;
+  --major-bg: #fdf3e3;
+  --moderate: #1d5fa8;
+  --moderate-bg: #e9f1fb;
+  --ok: #1a7f4b;
+  --ok-bg: #e7f5ec;
+  --sched: #6b21a8;
+  --sched-bg: #f3e8ff;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+
+/* Header styled like the top strip of an Rx label */
+header.rx {
+  border-bottom: 3px solid var(--ink);
+  padding: 26px 0 14px;
+  margin-bottom: 26px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.brand { font-weight: 700; font-size: 26px; letter-spacing: -0.02em; }
+.brand .rx-glyph { color: var(--accent); font-family: var(--mono); }
+.tagline { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* Search */
+.search-box { position: relative; }
+.search-box input {
+  width: 100%;
+  font: inherit;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+}
+.search-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.suggestions {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16,35,46,0.12); overflow: hidden;
+}
+.suggestions button {
+  display: flex; width: 100%; justify-content: space-between; align-items: center;
+  padding: 11px 14px; border: 0; background: none; font: inherit; cursor: pointer;
+  color: var(--ink); text-align: left;
+}
+.suggestions button:hover, .suggestions button:focus-visible { background: var(--accent-soft); outline: none; }
+.rxcui { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); }
+
+/* Med list chips */
+.medlist { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; min-height: 40px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 999px;
+  padding: 7px 8px 7px 14px; font-weight: 500;
+}
+.chip .sched-badge {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+  background: var(--sched-bg); color: var(--sched);
+  border-radius: 4px; padding: 2px 6px;
+}
+.chip button {
+  border: 0; background: var(--line); color: var(--ink-soft); border-radius: 50%;
+  width: 22px; height: 22px; cursor: pointer; font-size: 13px; line-height: 1;
+}
+.chip button:hover { background: var(--contra-bg); color: var(--contra); }
+
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+.check-btn {
+  font: inherit; font-weight: 600; color: #fff; background: var(--accent);
+  border: 0; border-radius: 8px; padding: 12px 22px; cursor: pointer;
+}
+.check-btn:disabled { opacity: 0.45; cursor: default; }
+.check-btn:not(:disabled):hover { background: #0a5854; }
+.hint { color: var(--ink-soft); font-size: 13.5px; }
+
+/* Section labels styled like auxiliary label headers */
+.section-label {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px; margin: 34px 0 14px;
+}
+
+/* Interaction cards = auxiliary labels: heavy left rule in severity color */
+.ix-card {
+  background: var(--card); border: 1.5px solid var(--line); border-left-width: 8px;
+  border-radius: 8px; padding: 16px 18px; margin-bottom: 12px;
+}
+.ix-card.contraindicated { border-left-color: var(--contra); }
+.ix-card.major { border-left-color: var(--major); }
+.ix-card.moderate { border-left-color: var(--moderate); }
+.ix-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.ix-pair { font-weight: 600; }
+.ix-pair .x { color: var(--ink-soft); font-family: var(--mono); padding: 0 6px; }
+.sev {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 3px 9px; border-radius: 4px;
+}
+.sev.contraindicated { background: var(--contra-bg); color: var(--contra); }
+.sev.major { background: var(--major-bg); color: var(--major); }
+.sev.moderate { background: var(--moderate-bg); color: var(--moderate); }
+.ix-plain { margin: 4px 0 8px; }
+.ix-advice { font-size: 13.5px; color: var(--ink-soft); background: var(--paper); border-radius: 6px; padding: 9px 12px; }
+.ix-advice strong { color: var(--ink); }
+.mech { font-size: 12.5px; color: var(--ink-soft); margin-top: 8px; }
+.mech summary { cursor: pointer; font-family: var(--mono); font-size: 11.5px; }
+
+.clear-card {
+  background: var(--ok-bg); border: 1.5px solid #bfe3cd; border-radius: 8px;
+  padding: 16px 18px; color: var(--ok); font-weight: 500;
+}
+.clear-card small { display: block; color: var(--ink-soft); font-weight: 400; margin-top: 4px; }
+
+/* Per-drug detail cards */
+.drug-card { background: var(--card); border: 1.5px solid var(--line); border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
+.drug-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.drug-head h3 { margin: 0; font-size: 16px; }
+.pill-flag {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em;
+  padding: 2.5px 8px; border-radius: 4px; text-transform: uppercase;
+}
+.pill-flag.sched { background: var(--sched-bg); color: var(--sched); }
+.pill-flag.nti { background: var(--major-bg); color: var(--major); }
+.pill-flag.rems { background: var(--contra-bg); color: var(--contra); }
+.drug-card ul { margin: 8px 0 0; padding-left: 20px; color: var(--ink-soft); font-size: 13.5px; }
+.drug-card .note { font-size: 13.5px; color: var(--ink-soft); margin-top: 8px; }
+.label-btn {
+  margin-top: 10px; font: inherit; font-size: 13px; font-weight: 500;
+  color: var(--accent); background: none; border: 1.5px solid var(--line);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+.label-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+.fda-block { margin-top: 10px; font-size: 13px; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: 10px; white-space: pre-wrap; }
+.fda-block .bw { color: var(--contra); }
+
+.disclaimer {
+  margin-top: 44px; font-size: 12.5px; color: var(--ink-soft);
+  border-top: 1px solid var(--line); padding-top: 14px; font-family: var(--mono);
+}
+.err { color: var(--contra); font-size: 13.5px; margin-top: 8px; }
+.spin { color: var(--ink-soft); font-family: var(--mono); font-size: 12px; }
+
+@media (max-width: 560px) {
+  .brand { font-size: 22px; }
+  .ix-top { flex-direction: column; align-items: flex-start; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ix-card, .drug-card { animation: rise 0.25s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(4px); } }
+}
+
+/* keyboard highlight */
+.suggestions button.hl { background: var(--accent-soft); }
+
+/* dose checker */
+.dose-check { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13.5px; }
+.dose-check label { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); }
+.dose-check input { font: inherit; width: 110px; padding: 6px 10px; border: 1.5px solid var(--line); border-radius: 6px; }
+.dose-check input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.dose-verdict { flex-basis: 100%; border-radius: 6px; padding: 9px 12px; font-size: 13.5px; }
+.dose-verdict.ok { background: var(--ok-bg); color: var(--ok); }
+.dose-verdict.near-max { background: var(--moderate-bg); color: var(--moderate); }
+.dose-verdict.above-max { background: var(--major-bg); color: var(--major); }
+.dose-verdict.high { background: var(--contra-bg); color: var(--contra); }
+.dose-verdict .note { color: var(--ink-soft); margin-top: 4px; }
+
+/* side effect chips */
+.se-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.se-chips span { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 12.5px; color: var(--ink-soft); }

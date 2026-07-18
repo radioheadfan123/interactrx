@@ -60,10 +60,19 @@ async function enrichCandidate(rxcui, name, tty) {
     const brands = (await relatedNames(rxcui, "tty=BN")).slice(0, 2).map((b) => b.name);
     out.push({ rxcui, name: brands.length ? `${name} (${brands.join(", ")})` : name });
     // combos containing this ingredient, e.g. hydrocodone -> acetaminophen / hydrocodone
-    const combos = (await relatedNames(rxcui, "rela=part_of")).filter((c) => c.tty === "MIN").slice(0, 2);
-    for (const c of combos) {
+    // rank by simplicity: 2-ingredient combos are the clinically common ones,
+    // 5-ingredient cough/cold formulas sink to the bottom
+    const allCombos = (await relatedNames(rxcui, "rela=part_of"))
+      .filter((c) => c.tty === "MIN")
+      .sort((x, y) => x.name.split("/").length - y.name.split("/").length);
+    const ranked = [];
+    for (const c of allCombos.slice(0, 6)) {
       const comboBrands = (await relatedNames(c.rxcui, "tty=BN")).slice(0, 2).map((b) => b.name);
-      out.push({ rxcui: c.rxcui, name: comboBrands.length ? `${c.name} (${comboBrands.join(", ")})` : c.name });
+      ranked.push({ combo: c, brands: comboBrands, parts: c.name.split("/").length });
+    }
+    ranked.sort((x, y) => (x.parts - y.parts) || (y.brands.length - x.brands.length));
+    for (const { combo, brands } of ranked.slice(0, 2)) {
+      out.push({ rxcui: combo.rxcui, name: brands.length ? `${combo.name} (${brands.join(", ")})` : combo.name });
     }
   } else if (tty === "MIN") {
     const brands = (await relatedNames(rxcui, "tty=BN")).slice(0, 2).map((b) => b.name);

@@ -16,7 +16,10 @@ global.fetch = jest.fn((url) => {
     return ok({ relatedGroup: { conceptGroup: [{ tty: "MIN", conceptProperties: [{ rxcui: "214182", name: "acetaminophen / hydrocodone", tty: "MIN" }] }] } });
   }
   if (u.includes("/rxcui/5489/related") && u.includes("rela=part_of")) {
-    return ok({ relatedGroup: { conceptGroup: [{ tty: "MIN", conceptProperties: [{ rxcui: "214182", name: "acetaminophen / hydrocodone", tty: "MIN" }] }] } });
+    return ok({ relatedGroup: { conceptGroup: [{ tty: "MIN", conceptProperties: [
+      { rxcui: "1007084", name: "chlorpheniramine / hydrocodone / phenylephrine / pseudoephedrine / pyrilamine", tty: "MIN" },
+      { rxcui: "214182", name: "acetaminophen / hydrocodone", tty: "MIN" },
+    ] } ] } });
   }
   if (u.includes("/rxcui/214182/related") && u.includes("tty=BN")) {
     return ok({ relatedGroup: { conceptGroup: [{ tty: "BN", conceptProperties: [{ rxcui: "218870", name: "Norco", tty: "BN" }] }] } });
@@ -53,11 +56,11 @@ describe("API", () => {
     const r = await request(app).get("/api/search?q=norco");
     expect(r.body.results[0].name).toBe("acetaminophen / hydrocodone (Norco)");
   });
-  test("ingredient search surfaces combo products", async () => {
+  test("ingredient search surfaces combo products, simplest first", async () => {
     const r = await request(app).get("/api/search?q=hydrocodone");
     const names = r.body.results.map((x) => x.name);
-    expect(names).toContain("hydrocodone");
-    expect(names).toContain("acetaminophen / hydrocodone (Norco)");
+    expect(names[0]).toBe("hydrocodone");
+    expect(names[1]).toBe("acetaminophen / hydrocodone (Norco)");
   });
   test("interactions rejects malformed payloads", async () => {
     for (const bad of [{}, { drugs: "x" }, { drugs: [{ rxcui: "<script>", name: "x" }] }, { drugs: [] }]) {

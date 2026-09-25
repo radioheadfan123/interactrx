@@ -121,6 +121,13 @@ describe("InteractRx UI", () => {
     expect(window.location.hash).toBe("");
   });
 
+  test("a share link pasted into an open tab replaces the list", async () => {
+    render(<App />);
+    window.location.hash = encodeShare([{ rxcui: "5640", name: "ibuprofen" }]).slice(1);
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    expect(await screen.findByRole("button", { name: /Remove ibuprofen/ })).toBeTruthy();
+  });
+
   test("copy share link writes the URL to the clipboard", async () => {
     const user = userEvent.setup();
     const writeText = vi.fn(() => Promise.resolve());

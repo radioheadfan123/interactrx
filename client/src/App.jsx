@@ -66,10 +66,7 @@ export default function App() {
   const [highlight, setHighlight] = useState(-1);
   const [meds, setMeds] = useState(() => {
     const shared = decodeShare(window.location.hash);
-    if (shared) {
-      history.replaceState(null, "", window.location.pathname + window.location.search);
-      return shared;
-    }
+    if (shared) return shared;
     try { return JSON.parse(localStorage.getItem("meds") || "[]"); } catch { return []; }
   });
   const [shareMsg, setShareMsg] = useState("");
@@ -97,6 +94,21 @@ export default function App() {
     setResult(null);
     setShareMsg("");
   }, [meds]);
+
+  // Drop the hash once the shared list is loaded, so a reload shows the saved list.
+  // Done in an effect, not the state initializer: StrictMode runs initializers twice.
+  // hashchange covers a link pasted into a tab that already has the app open.
+  useEffect(() => {
+    function takeShared() {
+      const shared = decodeShare(window.location.hash);
+      if (!shared) return;
+      setMeds(shared);
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    takeShared();
+    window.addEventListener("hashchange", takeShared);
+    return () => window.removeEventListener("hashchange", takeShared);
+  }, []);
 
   async function share() {
     const url = window.location.origin + window.location.pathname + encodeShare(meds);

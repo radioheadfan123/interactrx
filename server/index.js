@@ -33,6 +33,7 @@ const PSEUDO = [
   { match: /grapefruit/i, rxcui: "custom:grapefruit", name: "Grapefruit / grapefruit juice", ingredients: ["grapefruit"] },
   { match: /alcohol|ethanol|beer|wine|liquor/i, rxcui: "custom:alcohol", name: "Alcohol", ingredients: ["alcohol"] },
   { match: /john'?s?\s*wort|hypericum/i, rxcui: "custom:sjw", name: "St. John's Wort", ingredients: ["st. john's wort"] },
+  { match: /ginkgo/i, rxcui: "custom:ginkgo", name: "Ginkgo biloba", ingredients: ["ginkgo"] },
 ];
 const PSEUDO_BY_ID = Object.fromEntries(PSEUDO.map((p) => [p.rxcui, p]));
 

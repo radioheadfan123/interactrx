@@ -42,6 +42,19 @@ describe("checkPair", () => {
   test("multi-ingredient drug matches on any ingredient", () => {
     expect(sev(["hydrocodone", "acetaminophen"], ["alprazolam"])).toContain("major");
   });
+  test("alcohol + opioid is major, + acetaminophen is moderate", () => {
+    expect(sev(["oxycodone"], ["alcohol"])).toContain("major");
+    expect(sev(["alcohol"], ["acetaminophen"])).toEqual(["moderate"]);
+  });
+  test("alcohol + zolpidem is major, + ibuprofen is moderate", () => {
+    expect(sev(["zolpidem"], ["alcohol"])).toContain("major");
+    expect(sev(["ibuprofen"], ["alcohol"])).toEqual(["moderate"]);
+  });
+  test("ginkgo flags with blood thinners but not unrelated drugs", () => {
+    expect(sev(["ginkgo"], ["warfarin"])).toEqual(["moderate"]);
+    expect(sev(["clopidogrel"], ["ginkgo"])).toEqual(["moderate"]);
+    expect(sev(["ginkgo"], ["amlodipine"])).toEqual([]);
+  });
   test("no interaction returns empty", () => {
     expect(sev(["amoxicillin"], ["amlodipine"])).toEqual([]);
   });

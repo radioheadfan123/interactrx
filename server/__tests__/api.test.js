@@ -52,6 +52,10 @@ describe("API", () => {
     const r = await request(app).get("/api/search?q=grapefruit");
     expect(r.body.results.some((x) => x.rxcui === "custom:grapefruit")).toBe(true);
   });
+  test("search injects ginkgo pseudo-entry", async () => {
+    const r = await request(app).get("/api/search?q=ginkgo");
+    expect(r.body.results.some((x) => x.rxcui === "custom:ginkgo")).toBe(true);
+  });
   test("brand search displays as generic (Brand)", async () => {
     const r = await request(app).get("/api/search?q=norco");
     expect(r.body.results[0].name).toBe("acetaminophen / hydrocodone (Norco)");

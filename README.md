@@ -2,9 +2,9 @@
 
 A medication interaction checker. You search for drugs (brand or generic, doesn't matter, RxNorm normalizes everything), build up a med list, and it screens every pair for interactions. Results come back with a severity level and an actual explanation in plain English instead of raw API output. It also flags controlled substances with their DEA schedule, narrow therapeutic index drugs, REMS programs, and shows the kind of counseling points a pharmacist would go over at pickup.
 
-One thing worth knowing upfront. RxNav used to have a drug interaction API and it got shut down in January 2024, so the interaction screening here runs on a dataset I curated by hand. About 45 rules covering the interactions that actually matter clinically: anticoagulants with NSAIDs, serotonergic stacking, the CYP3A4 statin problems, opioid plus benzo (that one's an FDA boxed warning), QT prolongation stacking, grapefruit, St. John's Wort, enzyme inducers quietly defeating birth control, stuff like that. Rules expand across drug classes so one warfarin/NSAID rule catches ibuprofen, naproxen, ketorolac and friends. RxNorm itself is still alive and is used live for search and brand-to-generic resolution.
+One thing worth knowing upfront. RxNav used to have a drug interaction API and it got shut down in January 2024, so the interaction screening here runs on a dataset I curated by hand. About 50 rules covering the interactions that actually matter clinically: anticoagulants with NSAIDs, serotonergic stacking, the CYP3A4 statin problems, opioid plus benzo (that one's an FDA boxed warning), QT prolongation stacking, grapefruit, St. John's Wort, enzyme inducers quietly defeating birth control, stuff like that. Rules expand across drug classes so one warfarin/NSAID rule catches ibuprofen, naproxen, ketorolac and friends. RxNorm itself is still alive and is used live for search and brand-to-generic resolution.
 
-Is 45 rules exhaustive? No, and the app says so in the UI. Commercial databases have tens of thousands of pairs. This covers the famous ones and is honest about the gap.
+Is 50 rules exhaustive? No, and the app says so in the UI. Commercial databases have tens of thousands of pairs. This covers the famous ones and is honest about the gap.
 
 ## Running it locally
 
@@ -23,13 +23,19 @@ Vite serves on 5173 and proxies /api calls to the backend, so no config needed f
     cd server && npm test
     cd client && npm test
 
-34 on the backend (interaction rules, flags, dosage logic, plus API tests with the upstream calls mocked) and 7 component tests on the frontend that walk through real user flows, keyboard nav included. There's a GitHub Actions workflow that runs both suites and the frontend build on every push.
+40 on the backend (interaction rules, flags, dosage logic, plus API tests with the upstream calls mocked) and 12 component tests on the frontend that walk through real user flows, keyboard nav and share links included. There's a GitHub Actions workflow that runs both suites and the frontend build on every push.
 
 ## Deploying
 
 Backend goes on Railway or Render. Point it at the `server` directory, start command is `npm start`, PORT gets picked up automatically. Once the frontend is deployed, set CORS_ORIGIN to its URL.
 
 Frontend goes on Vercel or Netlify. Root directory `client`, framework Vite, and set VITE_API_URL to wherever the backend landed (no trailing slash).
+
+## Sharing and printing
+
+You can share a list without accounts. "Copy share link" puts the list in the URL after the `#`, and the part after `#` never gets sent to any server, so the list only goes wherever you paste the link. Opening the link loads that list and then drops it from the address bar. Everything in the link gets checked against the same rules the API uses, so an edited link can't sneak junk into the list. After a check there's also a "Print summary" button. The print version hides the search box and buttons and stamps the date and the med list at the top, so it's something you could actually bring to an appointment.
+
+Alcohol used to only hit benzos and metronidazole, which was a weird gap given how common it is. Now it also flags with opioids and sleep meds (major) and with acetaminophen and NSAIDs (moderate, which is where the OTC label warnings sit). Ginkgo is in too, flagged moderate with blood thinners. That one's honest about the evidence being mostly case reports.
 
 There's no database yet on purpose. Med lists live in localStorage which is honestly fine for v1. If accounts across devices become a thing, the path is Supabase auth plus a med_lists table, and the only code that changes is the localStorage read/write in App.jsx since the data shape is already just `[{rxcui, name}]`.
 
@@ -41,7 +47,7 @@ There's no database yet on purpose. Med lists live in localStorage which is hone
     GET  /api/label?name=metformin
     GET  /api/health
 
-Search hits RxNorm and filters to clean term types so you get "atorvastatin" and "Lipitor" in the dropdown, not seventeen dose-form variants. It also injects grapefruit, alcohol, and St. John's Wort as searchable entries since those interact with plenty of drugs but obviously aren't in a prescription database. The interactions endpoint resolves each drug to its ingredients before checking, which is why adding Xarelto and Advil still catches the rivaroxaban/ibuprofen bleed risk. The dose endpoint is a sanity check against typical adult maximums for about 40 common drugs, with caveats where a flat max is misleading (warfarin dosing is INR-driven, opioid ceilings depend on tolerance, etc). The label endpoint pulls from openFDA and parses the adverse reactions prose into a short list of common side effects instead of dumping a wall of text.
+Search hits RxNorm and filters to clean term types so you get "atorvastatin" and "Lipitor" in the dropdown, not seventeen dose-form variants. It also injects grapefruit, alcohol, St. John's Wort and ginkgo as searchable entries since those interact with plenty of drugs but obviously aren't in a prescription database. The interactions endpoint resolves each drug to its ingredients before checking, which is why adding Xarelto and Advil still catches the rivaroxaban/ibuprofen bleed risk. The dose endpoint is a sanity check against typical adult maximums for about 40 common drugs, with caveats where a flat max is misleading (warfarin dosing is INR-driven, opioid ceilings depend on tolerance, etc). The label endpoint pulls from openFDA and parses the adverse reactions prose into a short list of common side effects instead of dumping a wall of text.
 
 ## Disclaimer
 

@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import App from "../App.jsx";
+import App, { encodeShare, decodeShare } from "../App.jsx";
 
 const SEARCH = { results: [
   { rxcui: "11289", name: "warfarin" },
@@ -102,5 +102,45 @@ describe("InteractRx UI", () => {
     const saved = JSON.parse(localStorage.getItem("meds"));
     expect(saved).toHaveLength(2);
     expect(saved[0].name).toBe("warfarin");
+  });
+
+  test("share link round-trips and rejects tampered lists", () => {
+    const meds = [{ rxcui: "11289", name: "warfarin" }, { rxcui: "custom:grapefruit", name: "Grapefruit" }];
+    expect(decodeShare(encodeShare(meds))).toEqual(meds);
+    expect(decodeShare("#meds=" + encodeURIComponent('[["<script>","x"]]'))).toBeNull();
+    expect(decodeShare("#meds=notjson")).toBeNull();
+    expect(decodeShare("")).toBeNull();
+  });
+
+  test("opening a share link loads that list over the saved one", () => {
+    localStorage.setItem("meds", JSON.stringify([{ rxcui: "1", name: "saved drug" }]));
+    window.history.replaceState(null, "", "/" + encodeShare([{ rxcui: "11289", name: "warfarin" }, { rxcui: "5640", name: "ibuprofen" }]));
+    render(<App />);
+    expect(screen.getByRole("button", { name: /Remove warfarin/ })).toBeTruthy();
+    expect(screen.queryByText("saved drug")).toBeNull();
+    expect(window.location.hash).toBe("");
+  });
+
+  test("copy share link writes the URL to the clipboard", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<App />);
+    await addTwoMeds(user);
+    await user.click(screen.getByRole("button", { name: /Copy share link/ }));
+    expect(await screen.findByText(/Link copied/)).toBeTruthy();
+    expect(decodeShare(new URL(writeText.mock.calls[0][0]).hash)).toHaveLength(2);
+  });
+
+  test("print summary appears after a check and calls window.print", async () => {
+    const user = userEvent.setup();
+    window.print = vi.fn();
+    render(<App />);
+    await addTwoMeds(user);
+    expect(screen.queryByRole("button", { name: /Print summary/ })).toBeNull();
+    await user.click(screen.getByRole("button", { name: /Check interactions/ }));
+    await screen.findByText("Major");
+    await user.click(screen.getByRole("button", { name: /Print summary/ }));
+    expect(window.print).toHaveBeenCalled();
   });
 });

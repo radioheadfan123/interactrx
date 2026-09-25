@@ -5,6 +5,24 @@ const API = import.meta.env.VITE_API_URL || "";
 const SEV_LABEL = { contraindicated: "Contraindicated", major: "Major", moderate: "Moderate" };
 const ROMAN = ["", "I", "II", "III", "IV", "V"];
 
+// Share links carry the list in the URL hash, which browsers never send to a server.
+// Same shape rules the API enforces, so a hand-edited link can't smuggle junk in.
+export function encodeShare(meds) {
+  return "#meds=" + encodeURIComponent(JSON.stringify(meds.map((m) => [m.rxcui, m.name])));
+}
+export function decodeShare(hash) {
+  const m = /^#meds=(.+)$/.exec(hash || "");
+  if (!m) return null;
+  try {
+    const list = JSON.parse(decodeURIComponent(m[1]));
+    if (!Array.isArray(list) || !list.length || list.length > 20) return null;
+    const meds = list.map(([rxcui, name]) => ({ rxcui, name }));
+    const ok = meds.every((d) => typeof d.rxcui === "string" && /^(custom:[a-z]+|\d+)$/.test(d.rxcui) &&
+      typeof d.name === "string" && d.name.length > 0 && d.name.length <= 120);
+    return ok ? meds : null;
+  } catch { return null; }
+}
+
 function DoseChecker({ ingredient }) {
   const [daily, setDaily] = useState("");
   const [res, setRes] = useState(null);
@@ -47,8 +65,14 @@ export default function App() {
   const [suggestions, setSuggestions] = useState([]);
   const [highlight, setHighlight] = useState(-1);
   const [meds, setMeds] = useState(() => {
+    const shared = decodeShare(window.location.hash);
+    if (shared) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      return shared;
+    }
     try { return JSON.parse(localStorage.getItem("meds") || "[]"); } catch { return []; }
   });
+  const [shareMsg, setShareMsg] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -71,7 +95,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("meds", JSON.stringify(meds));
     setResult(null);
+    setShareMsg("");
   }, [meds]);
+
+  async function share() {
+    const url = window.location.origin + window.location.pathname + encodeShare(meds);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMsg("Link copied. Anyone who opens it gets this list.");
+    } catch {
+      setShareMsg(url); // clipboard blocked: show the link so it can be copied by hand
+    }
+  }
 
   useEffect(() => {
     clearTimeout(debounce.current);
@@ -195,11 +230,17 @@ export default function App() {
         </button>
         {meds.length === 1 && <span className="hint">Add one more to compare.</span>}
         {meds.length >= 2 && <span className="hint">{(meds.length * (meds.length - 1)) / 2} pair{meds.length > 2 ? "s" : ""} will be screened.</span>}
+        {meds.length > 0 && <button className="label-btn" onClick={share}>Copy share link</button>}
+        {result && <button className="label-btn" onClick={() => window.print()}>Print summary</button>}
       </div>
+      {shareMsg && <div className="note share-msg" role="status">{shareMsg}</div>}
       {error && <div className="err" role="alert">{error}</div>}
 
       {result && (
         <>
+          <div className="print-only print-meta">
+            Printed {new Date().toLocaleDateString()} · {meds.map((m) => m.name).join(", ")}
+          </div>
           <div className="section-label">Interaction screening</div>
           {result.interactions.length === 0 ? (
             <div className="clear-card">

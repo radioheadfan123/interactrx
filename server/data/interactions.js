@@ -269,4 +269,60 @@ function checkPair(ingredientsA, ingredientsB) {
   });
 }
 
-module.exports = { checkPair };
+// Therapeutic duplication: the same ingredient in two products (Tylenol + Norco),
+// or two different drugs from a class where doubling up is rarely intended.
+// Aspirin is left out of the NSAID duplicate check since low-dose aspirin next to
+// another NSAID is common and has its own nuance.
+const DUP_CLASSES = [
+  { cls: "nsaid", exclude: ["aspirin"], severity: "moderate", label: "two NSAID pain relievers",
+    advice: "Pick one NSAID unless a prescriber told you to take both. Stacking them raises stomach bleeding and kidney risk without much extra pain relief." },
+  { cls: "ssri", severity: "major", label: "two SSRI antidepressants",
+    advice: "Ask the prescriber if one is meant to replace the other. Two SSRIs together raise the risk of serotonin syndrome." },
+  { cls: "snri", severity: "major", label: "two SNRI antidepressants",
+    advice: "Ask the prescriber if one is meant to replace the other. Two SNRIs together raise the risk of serotonin syndrome." },
+  { cls: "benzo", severity: "moderate", label: "two benzodiazepines",
+    advice: "Check that both are intended. Two benzos add up to more sedation and more fall risk." },
+  { cls: "z_drug", severity: "moderate", label: "two sleep medicines",
+    advice: "Take only one sleep medicine a night unless a prescriber says otherwise." },
+  { cls: "anticoag", severity: "major", label: "two blood thinners",
+    advice: "This is sometimes intentional for a few days while switching (bridging), but confirm it with the prescriber. Two anticoagulants long term is a serious bleeding risk." },
+  { cls: "ace_arb", severity: "major", label: "an ACE inhibitor and/or ARB twice",
+    advice: "Doubling up on these (called dual RAAS blockade) is generally avoided because it raises potassium and strains the kidneys. Ask the prescriber if both are meant." },
+];
+
+const DUP_INGREDIENT_ADVICE = {
+  acetaminophen: "Keep total acetaminophen from all products under 3,000 to 4,000 mg a day (less if you drink or have liver problems). Count cold and flu products and combo painkillers like Norco too.",
+};
+
+function checkDuplication(ingredientsA, ingredientsB) {
+  const la = ingredientsA.map((s) => s.toLowerCase());
+  const lb = ingredientsB.map((s) => s.toLowerCase());
+  const found = [];
+  const shared = la.filter((i) => lb.includes(i));
+  for (const ing of shared) {
+    found.push({
+      type: "duplication",
+      severity: ing === "acetaminophen" ? "major" : "moderate",
+      mechanism: `Both products contain ${ing}, so doses add together.`,
+      plain: `Both of these contain ${ing}. Taking them together doubles up on the same medicine.`,
+      advice: DUP_INGREDIENT_ADVICE[ing] || "Make sure doubling up is intended, and count the total daily dose from both products.",
+    });
+  }
+  for (const d of DUP_CLASSES) {
+    const members = CLASSES[d.cls].filter((m) => !(d.exclude || []).includes(m));
+    const inA = la.filter((i) => members.includes(i) && !shared.includes(i));
+    const inB = lb.filter((i) => members.includes(i) && !shared.includes(i));
+    if (inA.length && inB.length) {
+      found.push({
+        type: "duplication",
+        severity: d.severity,
+        mechanism: `Therapeutic duplication: ${inA[0]} and ${inB[0]} are in the same drug class.`,
+        plain: `This looks like ${d.label}: ${inA[0]} and ${inB[0]} do the same job.`,
+        advice: d.advice,
+      });
+    }
+  }
+  return found;
+}
+
+module.exports = { checkPair, checkDuplication };

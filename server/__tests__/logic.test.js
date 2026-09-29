@@ -1,4 +1,4 @@
-const { checkPair } = require("../data/interactions");
+const { checkPair, checkDuplication } = require("../data/interactions");
 const { annotate } = require("../data/counseling");
 const { checkDose } = require("../data/dosage");
 
@@ -113,5 +113,37 @@ describe("checkDose", () => {
   });
   test("case insensitive", () => {
     expect(checkDose("Ibuprofen", 800).known).toBe(true);
+  });
+});
+
+describe("checkDuplication", () => {
+  const dup = (a, b) => checkDuplication(a, b);
+
+  test("same ingredient in two products: acetaminophen is major", () => {
+    const r = dup(["acetaminophen"], ["acetaminophen", "hydrocodone"]);
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ type: "duplication", severity: "major" });
+    expect(r[0].plain).toMatch(/acetaminophen/);
+  });
+  test("any other shared ingredient is moderate", () => {
+    expect(dup(["ibuprofen"], ["ibuprofen", "diphenhydramine"]).map((r) => r.severity)).toEqual(["moderate"]);
+  });
+  test("two different NSAIDs flag once, as moderate", () => {
+    const r = dup(["ibuprofen"], ["naproxen"]);
+    expect(r).toHaveLength(1);
+    expect(r[0].severity).toBe("moderate");
+  });
+  test("aspirin next to another NSAID is not a duplicate", () => {
+    expect(dup(["aspirin"], ["ibuprofen"])).toEqual([]);
+  });
+  test("two SSRIs and ACE + ARB are major", () => {
+    expect(dup(["sertraline"], ["fluoxetine"])[0].severity).toBe("major");
+    expect(dup(["lisinopril"], ["losartan"])[0].severity).toBe("major");
+  });
+  test("a shared ingredient is not also counted as a class duplicate", () => {
+    expect(dup(["naproxen"], ["naproxen"])).toHaveLength(1);
+  });
+  test("unrelated drugs return nothing", () => {
+    expect(dup(["warfarin"], ["ibuprofen"])).toEqual([]);
   });
 });

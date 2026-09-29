@@ -23,7 +23,7 @@ Vite serves on 5173 and proxies /api calls to the backend, so no config needed f
     cd server && npm test
     cd client && npm test
 
-40 on the backend (interaction rules, flags, dosage logic, plus API tests with the upstream calls mocked) and 12 component tests on the frontend that walk through real user flows, keyboard nav and share links included. There's a GitHub Actions workflow that runs both suites and the frontend build on every push.
+47 on the backend (interaction rules, duplicate therapy, flags, dosage logic, plus API tests with the upstream calls mocked) and 12 component tests on the frontend that walk through real user flows, keyboard nav and share links included. There's a GitHub Actions workflow that runs both suites and the frontend build on every push.
 
 ## Deploying
 
@@ -36,6 +36,8 @@ Frontend goes on Vercel or Netlify. Root directory `client`, framework Vite, and
 You can share a list without accounts. "Copy share link" puts the list in the URL after the `#`, and the part after `#` never gets sent to any server, so the list only goes wherever you paste the link. Opening the link loads that list and then drops it from the address bar. Everything in the link gets checked against the same rules the API uses, so an edited link can't sneak junk into the list. After a check there's also a "Print summary" button. The print version hides the search box and buttons and stamps the date and the med list at the top, so it's something you could actually bring to an appointment.
 
 Alcohol used to only hit benzos and metronidazole, which was a weird gap given how common it is. Now it also flags with opioids and sleep meds (major) and with acetaminophen and NSAIDs (moderate, which is where the OTC label warnings sit). Ginkgo is in too, flagged moderate with blood thinners. That one's honest about the evidence being mostly case reports.
+
+It also catches duplicate therapy now, which is honestly one of the most common things we catch at the pharmacy counter. If two products share an ingredient (Tylenol plus Norco is the classic one, both are acetaminophen) it flags it, and acetaminophen gets major because stacking it is how people end up with liver damage without realizing. It also flags two drugs from the same class doing the same job, like two NSAIDs, two SSRIs, two blood thinners, or an ACE inhibitor with an ARB. Aspirin is left out of the NSAID check on purpose since low-dose aspirin next to another NSAID is common and has its own nuance.
 
 There's no database yet on purpose. Med lists live in localStorage which is honestly fine for v1. If accounts across devices become a thing, the path is Supabase auth plus a med_lists table, and the only code that changes is the localStorage read/write in App.jsx since the data shape is already just `[{rxcui, name}]`.
 

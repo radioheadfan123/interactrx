@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const { checkPair } = require("./data/interactions");
+const { checkPair, checkDuplication } = require("./data/interactions");
 const { annotate } = require("./data/counseling");
 const { checkDose } = require("./data/dosage");
 
@@ -161,9 +161,10 @@ app.post("/api/interactions", async (req, res) => {
     const interactions = [];
     for (let i = 0; i < enriched.length; i++) {
       for (let j = i + 1; j < enriched.length; j++) {
-        for (const h of checkPair(enriched[i].ingredients, enriched[j].ingredients)) {
+        const a = enriched[i].ingredients, b = enriched[j].ingredients;
+        for (const h of [...checkPair(a, b), ...checkDuplication(a, b)]) {
           interactions.push({
-            drugA: enriched[i].name, drugB: enriched[j].name,
+            drugA: enriched[i].name, drugB: enriched[j].name, type: h.type || "interaction",
             severity: h.severity, plain: h.plain, mechanism: h.mechanism, advice: h.advice,
           });
         }

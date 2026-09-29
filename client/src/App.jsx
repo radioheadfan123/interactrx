@@ -264,7 +264,10 @@ export default function App() {
               <div className={`ix-card ${ix.severity}`} key={i}>
                 <div className="ix-top">
                   <span className="ix-pair">{ix.drugA}<span className="x">×</span>{ix.drugB}</span>
-                  <span className={`sev ${ix.severity}`}>{SEV_LABEL[ix.severity]}</span>
+                  <span>
+                    {ix.type === "duplication" && <span className="dup-tag">Duplicate therapy</span>}
+                    <span className={`sev ${ix.severity}`}>{SEV_LABEL[ix.severity]}</span>
+                  </span>
                 </div>
                 <div className="ix-plain">{ix.plain}</div>
                 <div className="ix-advice"><strong>What to do:</strong> {ix.advice}</div>

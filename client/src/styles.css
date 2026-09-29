@@ -127,6 +127,12 @@ header.rx {
 .sev.contraindicated { background: var(--contra-bg); color: var(--contra); }
 .sev.major { background: var(--major-bg); color: var(--major); }
 .sev.moderate { background: var(--moderate-bg); color: var(--moderate); }
+.dup-tag {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 3px 9px; border-radius: 4px; margin-right: 6px;
+  border: 1px solid var(--ink-soft); color: var(--ink-soft);
+}
 .ix-plain { margin: 4px 0 8px; }
 .ix-advice { font-size: 13.5px; color: var(--ink-soft); background: var(--paper); border-radius: 6px; padding: 9px 12px; }
 .ix-advice strong { color: var(--ink); }

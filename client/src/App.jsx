@@ -5,6 +5,15 @@ const API = import.meta.env.VITE_API_URL || "";
 const SEV_LABEL = { contraindicated: "Contraindicated", major: "Major", moderate: "Moderate" };
 const ROMAN = ["", "I", "II", "III", "IV", "V"];
 
+// One-click demo lists. Same {rxcui, name} entries the search returns, so the server
+// resolves brands to ingredients exactly like a hand-built list.
+export const EXAMPLES = [
+  { label: "Tylenol + Norco", meds: [{ rxcui: "202433", name: "acetaminophen (Tylenol)" }, { rxcui: "218772", name: "acetaminophen / hydrocodone (Norco)" }] },
+  { label: "Warfarin + Advil", meds: [{ rxcui: "11289", name: "warfarin (Coumadin, Jantoven)" }, { rxcui: "153010", name: "ibuprofen (Advil)" }] },
+  { label: "Nardil + Sudafed", meds: [{ rxcui: "8123", name: "phenelzine (Nardil)" }, { rxcui: "203302", name: "pseudoephedrine (Sudafed)" }] },
+  { label: "Zoloft + tramadol", meds: [{ rxcui: "36437", name: "sertraline (Zoloft)" }, { rxcui: "10689", name: "tramadol (ConZip, Ultram)" }] },
+];
+
 // Share links carry the list in the URL hash, which browsers never send to a server.
 // Same shape rules the API enforces, so a hand-edited link can't smuggle junk in.
 export function encodeShare(meds) {
@@ -78,6 +87,7 @@ export default function App() {
   const debounce = useRef();
   const inputRef = useRef();
   const boxRef = useRef();
+  const autoCheck = useRef(false);
 
   useEffect(() => {
     function onDocDown(e) {
@@ -93,7 +103,13 @@ export default function App() {
     localStorage.setItem("meds", JSON.stringify(meds));
     setResult(null);
     setShareMsg("");
+    if (autoCheck.current) { autoCheck.current = false; check(); }
   }, [meds]);
+
+  function loadExample(list) {
+    autoCheck.current = true;
+    setMeds(list);
+  }
 
   // Drop the hash once the shared list is loaded, so a reload shows the saved list.
   // Done in an effect, not the state initializer: StrictMode runs initializers twice.
@@ -223,7 +239,17 @@ export default function App() {
       </div>
 
       <div className="medlist">
-        {meds.length === 0 && <span className="hint">Add two or more items to run a check. Your list stays on this device.</span>}
+        {meds.length === 0 && (
+          <>
+            <span className="hint">Add two or more items to run a check. Your list stays on this device.</span>
+            <div className="examples">
+              <span className="examples-label">Try an example</span>
+              {EXAMPLES.map((ex) => (
+                <button key={ex.label} className="label-btn" onClick={() => loadExample(ex.meds)}>{ex.label}</button>
+              ))}
+            </div>
+          </>
+        )}
         {meds.map((m) => {
           const f = flagged.find((d) => d.rxcui === m.rxcui)?.flags;
           return (
@@ -326,6 +352,17 @@ export default function App() {
           })}
         </>
       )}
+
+      <details className="why">
+        <summary>Why I built this</summary>
+        <p>
+          I've worked as a pharmacy tech for five years, at CVS, Costco, Walmart and H-E-B. One of the most
+          common things we catch at the counter is duplicate therapy, like someone taking Tylenol on top of
+          Norco without realizing both are acetaminophen. People also don't mention OTC stuff. Cold medicine
+          and sleep aids just don't feel like real meds to them. RxNav's interaction API got shut down in
+          January 2024, so I ended up curating the rules myself.
+        </p>
+      </details>
 
       <div className="disclaimer">
         Educational tool, not medical advice. Interaction screening uses a curated dataset of clinically

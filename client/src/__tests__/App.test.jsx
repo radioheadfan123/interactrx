@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import App, { encodeShare, decodeShare } from "../App.jsx";
+import App, { encodeShare, decodeShare, EXAMPLES } from "../App.jsx";
 
 const SEARCH = { results: [
   { rxcui: "11289", name: "warfarin" },
@@ -149,5 +149,37 @@ describe("InteractRx UI", () => {
     await screen.findByText("Major");
     await user.click(screen.getByRole("button", { name: /Print summary/ }));
     expect(window.print).toHaveBeenCalled();
+  });
+
+  test("example button loads its list and runs the check in one click", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Warfarin + Advil" }));
+    expect(screen.getByRole("button", { name: /Remove ibuprofen \(Advil\)/ })).toBeTruthy();
+    expect(await screen.findByText("Major")).toBeTruthy();
+    const call = fetch.mock.calls.find(([u]) => String(u).includes("/api/interactions"));
+    expect(JSON.parse(call[1].body).drugs).toEqual(EXAMPLES[1].meds);
+    expect(screen.queryByRole("button", { name: "Tylenol + Norco" })).toBeNull();
+  });
+
+  test("example buttons are keyboard usable", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    screen.getByRole("button", { name: "Tylenol + Norco" }).focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("button", { name: /Remove acetaminophen \/ hydrocodone \(Norco\)/ })).toBeTruthy();
+    await waitFor(() => expect(fetch.mock.calls.some(([u]) => String(u).includes("/api/interactions"))).toBe(true));
+  });
+
+  test("every example is a valid share-shaped list", () => {
+    expect(EXAMPLES).toHaveLength(4);
+    for (const ex of EXAMPLES) expect(decodeShare(encodeShare(ex.meds))).toEqual(ex.meds);
+  });
+
+  test("why I built this sits above the disclaimer", () => {
+    render(<App />);
+    expect(screen.getByText("Why I built this")).toBeTruthy();
+    expect(screen.getByText(/five years/)).toBeTruthy();
+    expect(screen.getByText(/Educational tool, not medical advice/)).toBeTruthy();
   });
 });

@@ -23,7 +23,7 @@ Vite serves on 5173 and proxies /api calls to the backend, so no config needed f
     cd server && npm test
     cd client && npm test
 
-47 on the backend (interaction rules, duplicate therapy, flags, dosage logic, plus API tests with the upstream calls mocked) and 12 component tests on the frontend that walk through real user flows, keyboard nav and share links included. There's a GitHub Actions workflow that runs both suites and the frontend build on every push.
+49 on the backend (interaction rules, duplicate therapy, flags, dosage logic, plus API tests with the upstream calls mocked) and 16 component tests on the frontend that walk through real user flows, keyboard nav, share links and the example buttons included. There's a GitHub Actions workflow that runs both suites and the frontend build on every push.
 
 ## Deploying
 
@@ -32,6 +32,8 @@ Backend goes on Railway or Render. Point it at the `server` directory, start com
 Frontend goes on Vercel or Netlify. Root directory `client`, framework Vite, and set VITE_API_URL to wherever the backend landed (no trailing slash).
 
 ## Sharing and printing
+
+If you just want to see what it does, the empty page has a few "Try an example" buttons (Tylenol plus Norco, warfarin plus Advil, Nardil plus Sudafed, Zoloft plus tramadol). One click loads the list and runs the check. They use the same RxNorm IDs the search would give you, so the brand names still get resolved to ingredients on the server like normal.
 
 You can share a list without accounts. "Copy share link" puts the list in the URL after the `#`, and the part after `#` never gets sent to any server, so the list only goes wherever you paste the link. Opening the link loads that list and then drops it from the address bar. Everything in the link gets checked against the same rules the API uses, so an edited link can't sneak junk into the list. After a check there's also a "Print summary" button. The print version hides the search box and buttons and stamps the date and the med list at the top, so it's something you could actually bring to an appointment.
 

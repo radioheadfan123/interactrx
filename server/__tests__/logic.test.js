@@ -55,6 +55,17 @@ describe("checkPair", () => {
     expect(sev(["clopidogrel"], ["ginkgo"])).toEqual(["moderate"]);
     expect(sev(["ginkgo"], ["amlodipine"])).toEqual([]);
   });
+  test("counter catches: OTC cold, cough and sleep products", () => {
+    expect(sev(["phenelzine"], ["pseudoephedrine"])).toContain("contraindicated");
+    expect(sev(["sertraline"], ["dextromethorphan"])).toEqual(["moderate"]);
+    expect(sev(["gabapentin"], ["oxycodone"])).toContain("major");
+    expect(sev(["bupropion"], ["tramadol"])).toContain("major");
+    expect(sev(["diphenhydramine"], ["alcohol"])).toContain("moderate");
+    expect(sev(["methotrexate"], ["sulfamethoxazole", "trimethoprim"])).toContain("major");
+  });
+  test("decongestant alone with a non-MAOI antidepressant is not flagged", () => {
+    expect(sev(["sertraline"], ["pseudoephedrine"])).toEqual([]);
+  });
   test("no interaction returns empty", () => {
     expect(sev(["amoxicillin"], ["amlodipine"])).toEqual([]);
   });

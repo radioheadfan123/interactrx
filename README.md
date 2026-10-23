@@ -39,6 +39,8 @@ Alcohol used to only hit benzos and metronidazole, which was a weird gap given h
 
 It also catches duplicate therapy now, which is honestly one of the most common things we catch at the pharmacy counter. If two products share an ingredient (Tylenol plus Norco is the classic one, both are acetaminophen) it flags it, and acetaminophen gets major because stacking it is how people end up with liver damage without realizing. It also flags two drugs from the same class doing the same job, like two NSAIDs, two SSRIs, two blood thinners, or an ACE inhibitor with an ARB. Aspirin is left out of the NSAID check on purpose since low-dose aspirin next to another NSAID is common and has its own nuance.
 
+I also added the OTC stuff, because that's where a lot of the real catches happen. People don't think of cold medicine or sleep aids as "real" meds so they don't mention them. So now it flags Sudafed or DayQuil on an MAOI, the DM in Delsym or NyQuil on top of an SSRI, Benadryl or ZzzQuil stacked with opioids, benzos or alcohol, gabapentin with an opioid (the FDA put a breathing warning on that in 2019), bupropion with tramadol, and Bactrim with methotrexate.
+
 There's no database yet on purpose. Med lists live in localStorage which is honestly fine for v1. If accounts across devices become a thing, the path is Supabase auth plus a med_lists table, and the only code that changes is the localStorage read/write in App.jsx since the data shape is already just `[{rxcui, name}]`.
 
 ## API

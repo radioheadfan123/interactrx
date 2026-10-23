@@ -31,6 +31,9 @@ const CLASSES = {
   doac: ["apixaban", "rivaroxaban", "dabigatran", "edoxaban"],
   serotonergic_all: ["sertraline", "fluoxetine", "paroxetine", "citalopram", "escitalopram", "fluvoxamine", "venlafaxine", "duloxetine", "desvenlafaxine", "trazodone", "tramadol", "buspirone"],
   oral_contraceptive: ["ethinyl estradiol", "norethindrone", "levonorgestrel", "drospirenone", "norgestimate"],
+  decongestant: ["pseudoephedrine", "phenylephrine"],
+  gabapentinoid: ["gabapentin", "pregabalin"],
+  sedating_antihistamine: ["diphenhydramine", "doxylamine", "chlorpheniramine", "promethazine", "hydroxyzine"],
 };
 
 // Each rule: a (list or class ref), b, severity, mechanism, plain, advice
@@ -231,6 +234,31 @@ const RULES = [
     mechanism: "Antacid reduces absorption.",
     plain: "Antacids can meaningfully cut how much of this medicine absorbs.",
     advice: "Separate by 2 hours." },
+  // Counter catches: OTC cough/cold/sleep products people don't think of as "real" meds.
+  { a: "maoi", b: "decongestant", severity: "contraindicated",
+    mechanism: "MAOIs block breakdown of the norepinephrine that sympathomimetic decongestants release.",
+    plain: "A regular cold medicine like Sudafed or DayQuil can spike blood pressure dangerously on an MAOI.",
+    advice: "Do not combine. For congestion, saline spray or a plain antihistamine is safer; check with the pharmacist before any cold product." },
+  { a: [...CLASSES.ssri, ...CLASSES.snri], b: ["dextromethorphan"], severity: "moderate",
+    mechanism: "Dextromethorphan has serotonergic activity; fluoxetine and paroxetine also block its CYP2D6 metabolism.",
+    plain: "The cough suppressant in Delsym, NyQuil and Robitussin DM adds serotonin on top of an antidepressant. Normal doses are usually okay, but it adds up.",
+    advice: "Stick to the labeled dose and don't stack multiple DM products. Stop and get help for agitation, sweating, tremor or a racing heart." },
+  { a: "gabapentinoid", b: "opioid", severity: "major",
+    mechanism: "Additive CNS and respiratory depression (FDA warning, 2019).",
+    plain: "Gabapentin or pregabalin with an opioid can slow breathing more than either alone, especially in older adults or people with lung problems.",
+    advice: "Use the lowest effective doses and avoid alcohol. Family should know the signs of oversedation: very sleepy, hard to wake, slow or shallow breathing." },
+  { a: ["bupropion"], b: ["tramadol"], severity: "major",
+    mechanism: "Both lower the seizure threshold; bupropion also inhibits CYP2D6 and changes tramadol's activation.",
+    plain: "Together these raise the risk of a seizure, and the pain relief from tramadol can be less predictable.",
+    advice: "Prefer a different pain option. If combined, keep tramadol at the lowest dose and avoid it entirely with any seizure history." },
+  { a: "sedating_antihistamine", b: [...CLASSES.opioid, ...CLASSES.benzo, ...CLASSES.z_drug, "alcohol"], severity: "moderate",
+    mechanism: "Additive CNS depression and anticholinergic effects.",
+    plain: "Benadryl, ZzzQuil, Unisom and similar sleep or allergy products stack drowsiness on top of pain or sleep medicines and alcohol.",
+    advice: "Avoid doubling up on sleep aids. Older adults especially should skip diphenhydramine (fall and confusion risk). Don't drive until you know how it hits you." },
+  { a: ["methotrexate"], b: ["trimethoprim", "sulfamethoxazole"], severity: "major",
+    mechanism: "Both are antifolates; trimethoprim also reduces methotrexate renal clearance.",
+    plain: "Bactrim on top of methotrexate can crash blood counts, even at the low weekly methotrexate doses used for arthritis.",
+    advice: "Usually avoided. If an antibiotic is needed, ask the prescriber for a different one and mention the methotrexate." },
 ];
 
 function expand(x) {
